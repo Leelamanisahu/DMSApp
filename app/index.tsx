@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -9,13 +10,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { login } from "./services/auth";
 
 export default function LoginScreen() {
   const [mobile, setMobile] = useState("");
 
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => login(mobile),
+    onSuccess: (data) => {
+      router.push({ pathname: "/otp", params: { mobile } });
+    },
+    onError: (error: any) => {
+      console.log(error?.response);
+      alert(error?.response?.data?.message || "Something went wrong");
+    },
+  });
+
   const sendOtp = () => {
     if (mobile.length === 10) {
-      router.push({ pathname: "/otp", params: { mobile } });
+      mutate(); // ✅ use mutate to trigger mutation
     } else {
       alert("Please enter a valid 10-digit mobile number.");
     }
@@ -42,8 +55,14 @@ export default function LoginScreen() {
           style={styles.input}
         />
 
-        <TouchableOpacity style={styles.button} onPress={sendOtp}>
-          <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={sendOtp}
+          disabled={isPending}
+        >
+          <Text style={styles.buttonText}>
+            {isPending ? "Sending OTP..." : "Login"}
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

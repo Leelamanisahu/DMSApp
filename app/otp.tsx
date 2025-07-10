@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Dimensions,
@@ -15,9 +15,10 @@ const { width } = Dimensions.get("window");
 const OTPVerificationScreen = () => {
   const [otp, setOtp] = useState("");
 
+  const { mobile } = useLocalSearchParams<{ mobile: string }>();
   const handleVerify = () => {
     // Your OTP verification logic here
-    console.log("Entered OTP:", otp);
+    console.log("Entered mobile:", mobile);
     router.push("/(tabs)/profile");
   };
 
