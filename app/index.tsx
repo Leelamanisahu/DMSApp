@@ -15,7 +15,7 @@ export default function LoginScreen() {
 
   const sendOtp = () => {
     if (mobile.length === 10) {
-      router.push({ pathname: "/(tabs)/otp", params: { mobile } });
+      router.push({ pathname: "/otp", params: { mobile } });
     } else {
       alert("Please enter a valid 10-digit mobile number.");
     }
