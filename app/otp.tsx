@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Dimensions,
@@ -9,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
+import { verifyOtp } from "./services/auth";
 
 const { width } = Dimensions.get("window");
 
@@ -18,9 +20,21 @@ const OTPVerificationScreen = () => {
   const { mobile } = useLocalSearchParams<{ mobile: string }>();
   const handleVerify = () => {
     // Your OTP verification logic here
+    mutate();
     console.log("Entered mobile:", mobile);
-    router.push("/(tabs)/profile");
   };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => verifyOtp(mobile, otp),
+    mutationKey: [otp],
+    onSuccess: (data) => {
+      console.log(data);
+      // router.push("/(tabs)/profile");
+    },
+    onError: (err) => {
+      console.log(err);
+    },
+  });
 
   return (
     <KeyboardAvoidingView

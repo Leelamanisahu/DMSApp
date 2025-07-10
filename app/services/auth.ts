@@ -10,5 +10,9 @@ export const login = async (phone: string) => {
     console.log(error);
   }
 };
-export const verifyOtp = (phone: string, otp: string) =>
-  axios.post("/validateOTP", { mobile_number: phone, otp });
+export const verifyOtp = async (phone: string, otp: string) => {
+  try {
+    const res = await axios.post("/validateOTP", { mobile_number: phone, otp });
+    return res.data;
+  } catch (error) {}
+};
