@@ -14,5 +14,7 @@ export const verifyOtp = async (phone: string, otp: string) => {
   try {
     const res = await axios.post("/validateOTP", { mobile_number: phone, otp });
     return res.data;
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+  }
 };

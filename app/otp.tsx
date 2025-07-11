@@ -32,7 +32,7 @@ const OTPVerificationScreen = () => {
       if (token) {
         await saveToken(token);
       }
-      router.push("/(tabs)/home");
+      router.replace("/(tabs)/home");
     },
     onError: (err) => {
       console.log(err);

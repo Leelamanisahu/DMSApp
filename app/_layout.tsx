@@ -27,7 +27,8 @@ export default function RootLayout() {
             headerShown: false,
           }}
         >
-          <Stack.Screen name="index" />
+          <Stack.Screen name="splash" />
+          <Stack.Screen name="login" />
           <Stack.Screen name="otp" options={{ title: "Verification" }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />

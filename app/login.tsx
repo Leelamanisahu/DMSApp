@@ -28,7 +28,7 @@ export default function LoginScreen() {
 
   const sendOtp = () => {
     if (mobile.length === 10) {
-      mutate(); // ✅ use mutate to trigger mutation
+      mutate();
     } else {
       alert("Please enter a valid 10-digit mobile number.");
     }
