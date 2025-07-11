@@ -1,10 +1,13 @@
+import { uploadDocumentEntry } from "@/app/services/upload";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useMutation } from "@tanstack/react-query";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   Button,
   Image,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -24,17 +27,17 @@ export default function UploadScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [majorHeadOpen, setMajorHeadOpen] = useState(false);
-  const [majorHead, setMajorHead] = useState<string | null>(null);
+  const [majorHead, setMajorHead] = useState(null);
   const [majorHeadItems, setMajorHeadItems] = useState([
     { label: "Personal", value: "personal" },
     { label: "Professional", value: "professional" },
   ]);
 
   const [minorHeadOpen, setMinorHeadOpen] = useState(false);
-  const [minorHead, setMinorHead] = useState<string | null>(null);
+  const [minorHead, setMinorHead] = useState(null);
   const [minorHeadItems, setMinorHeadItems] = useState<DropdownItem[]>([]);
 
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<{ tag_name: string }[]>([]);
   const [tagInput, setTagInput] = useState("");
 
   const [remarks, setRemarks] = useState("");
@@ -55,7 +58,7 @@ export default function UploadScreen() {
     } else {
       setMinorHeadItems([]);
     }
-    setMinorHead(null); // reset minor head when major head changes
+    setMinorHead(null);
   }, [majorHead]);
 
   const pickImageOrPdf = async () => {
@@ -81,138 +84,170 @@ export default function UploadScreen() {
 
   const handleAddTag = () => {
     const clean = tagInput.trim();
-    if (clean && !tags.includes(clean)) {
-      setTags([...tags, clean]);
+    const isDuplicate = tags.some((t) => t.tag_name === clean);
+
+    if (clean && !isDuplicate) {
+      setTags([...tags, { tag_name: clean }]);
       setTagInput("");
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag.tag_name !== tagToRemove));
   };
 
   const handleUpload = () => {
-    console.log({
-      date,
-      majorHead,
-      minorHead,
-      tags,
-      remarks,
-      file,
-    });
+    if (!file || !majorHead || !minorHead || tags.length === 0) {
+      alert("Please fill all fields before uploading.");
+      return;
+    }
+
+    mutate();
   };
 
+  const { mutate, isPending } = useMutation({
+    mutationFn: (params) =>
+      uploadDocumentEntry({
+        file: {
+          uri: file.uri,
+          mimeType: file.mimeType,
+          fileName: file.fileName,
+        },
+        majorHead: majorHead!,
+        minorHead: minorHead!,
+        documentDate: date,
+        documentRemarks: remarks,
+        tags,
+        userId: "leelamani",
+      }),
+    onSuccess: (data) => {
+      console.log("Upload success:", data);
+    },
+    onError: (error) => {
+      console.error("Upload error:", error);
+    },
+  });
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Select Document Date</Text>
-      <TouchableOpacity
-        onPress={() => setShowDatePicker(true)}
-        style={styles.dateBox}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingBottom: 120 }]}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
       >
-        <Text>{date.toDateString()}</Text>
-      </TouchableOpacity>
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display={Platform.OS === "ios" ? "inline" : "default"}
-          onChange={(_, selectedDate) => {
-            if (selectedDate) setDate(selectedDate);
-            setShowDatePicker(false);
-          }}
-        />
-      )}
-
-      <Text style={styles.label}>Category (Major Head)</Text>
-      <DropDownPicker
-        open={majorHeadOpen}
-        value={majorHead}
-        items={majorHeadItems}
-        setOpen={setMajorHeadOpen}
-        setValue={setMajorHead}
-        setItems={setMajorHeadItems}
-        placeholder="Select category"
-        style={styles.dropdown}
-        zIndex={3000}
-        zIndexInverse={1000}
-      />
-
-      {majorHead && (
-        <>
-          <Text style={styles.label}>Sub-Category (Minor Head)</Text>
-          <DropDownPicker
-            open={minorHeadOpen}
-            value={minorHead}
-            items={minorHeadItems}
-            setOpen={setMinorHeadOpen}
-            setValue={setMinorHead}
-            setItems={setMinorHeadItems}
-            placeholder="Select sub-category"
-            style={styles.dropdown}
-            zIndex={2000}
-            zIndexInverse={2000}
+        <Text style={styles.label}>Select Document Date</Text>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          style={styles.dateBox}
+        >
+          <Text>{date.toDateString()}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            onChange={(_, selectedDate) => {
+              if (selectedDate) setDate(selectedDate);
+              setShowDatePicker(false);
+            }}
           />
-        </>
-      )}
+        )}
 
-      <Text style={styles.label}>Add Tags</Text>
-      <View style={styles.tagInputWrapper}>
-        <TextInput
-          placeholder="Type tag and press Add"
-          value={tagInput}
-          onChangeText={setTagInput}
-          style={styles.input}
+        <Text style={styles.label}>Category (Major Head)</Text>
+        <DropDownPicker
+          open={majorHeadOpen}
+          value={majorHead}
+          items={majorHeadItems}
+          setOpen={setMajorHeadOpen}
+          setValue={setMajorHead}
+          setItems={setMajorHeadItems}
+          placeholder="Select category"
+          style={styles.dropdown}
+          zIndex={3000}
+          zIndexInverse={1000}
         />
-        <Button color={"black"} title="Add" onPress={handleAddTag} />
-      </View>
 
-      <View style={styles.tagContainer}>
-        {tags.map((tag) => (
-          <TouchableOpacity
-            key={tag}
-            onPress={() => handleRemoveTag(tag)}
-            style={styles.tag}
-          >
-            <Text style={styles.tagText}>{tag} ✕</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        {majorHead && (
+          <>
+            <Text style={styles.label}>Sub-Category (Minor Head)</Text>
+            <DropDownPicker
+              open={minorHeadOpen}
+              value={minorHead}
+              items={minorHeadItems}
+              setOpen={setMinorHeadOpen}
+              setValue={setMinorHead}
+              setItems={setMinorHeadItems}
+              placeholder="Select sub-category"
+              style={styles.dropdown}
+              zIndex={2000}
+              zIndexInverse={2000}
+            />
+          </>
+        )}
 
-      <Text style={styles.label}>Remarks</Text>
-      <TextInput
-        placeholder="Enter remarks"
-        value={remarks}
-        onChangeText={setRemarks}
-        multiline
-        style={[styles.input, { height: 80 }]}
-      />
+        <Text style={styles.label}>Add Tags</Text>
+        <View style={styles.tagInputWrapper}>
+          <TextInput
+            placeholder="Type tag and press Add"
+            value={tagInput}
+            onChangeText={setTagInput}
+            style={styles.input}
+          />
+          <Button color={"#1e73be"} title="Add" onPress={handleAddTag} />
+        </View>
 
-      <Text style={styles.label}>Upload File (Image/PDF)</Text>
-      <Button
-        color={"black"}
-        title="Upload or Take Picture"
-        onPress={pickImageOrPdf}
-      />
-      {file?.uri && (
-        <>
-          <Text style={{ marginTop: 10 }}>Selected File:</Text>
-          {file?.mimeType === "application/pdf" ? (
-            <Text>{file.name}</Text>
-          ) : (
-            <Image source={{ uri: file.uri }} style={styles.imagePreview} />
-          )}
-        </>
-      )}
+        <View style={styles.tagContainer}>
+          {tags.map((tag) => (
+            <TouchableOpacity
+              key={tag.tag_name}
+              onPress={() => handleRemoveTag(tag.tag_name)}
+              style={styles.tag}
+            >
+              <Text style={styles.tagText}>{tag.tag_name} ✕</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <View style={{ marginTop: 30 }}>
-        <Button color={"black"} title="Submit" onPress={handleUpload} />
-      </View>
-    </ScrollView>
+        <Text style={styles.label}>Remarks</Text>
+        <TextInput
+          placeholder="Enter remarks"
+          value={remarks}
+          onChangeText={setRemarks}
+          multiline
+          style={[styles.input, { height: 80 }]}
+        />
+
+        <Text style={styles.label}>Upload File (Image/PDF)</Text>
+        <Button
+          color={"#1e73be"}
+          title="Upload or Take Picture"
+          onPress={pickImageOrPdf}
+        />
+        {file?.uri && (
+          <>
+            <Text style={{ marginTop: 10 }}>Selected File:</Text>
+            {file?.mimeType === "application/pdf" ? (
+              <Text>{file.name}</Text>
+            ) : (
+              <Image source={{ uri: file.uri }} style={styles.imagePreview} />
+            )}
+          </>
+        )}
+
+        <View style={{ marginTop: 30 }}>
+          <Button color={"#1e73be"} title="Submit" onPress={handleUpload} />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
+  container: { padding: 10 },
   label: { fontWeight: "bold", marginTop: 20 },
   input: {
     borderWidth: 1,
@@ -220,6 +255,16 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     borderRadius: 6,
     flex: 1,
+  },
+  uploadBox: {
+    position: "absolute",
+    flexDirection: "row",
+    padding: 10,
+    marginTop: 30,
+    elevation: 10,
+    borderRadius: 20,
+    backgroundColor: "#000",
+    justifyContent: "center",
   },
   dateBox: {
     borderWidth: 1,

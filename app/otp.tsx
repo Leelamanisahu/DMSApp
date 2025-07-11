@@ -1,5 +1,6 @@
+import { saveToken } from "@/utils/securestore";
 import { useMutation } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Dimensions,
@@ -21,15 +22,17 @@ const OTPVerificationScreen = () => {
   const handleVerify = () => {
     // Your OTP verification logic here
     mutate();
-    console.log("Entered mobile:", mobile);
   };
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => verifyOtp(mobile, otp),
     mutationKey: [otp],
-    onSuccess: (data) => {
-      console.log(data);
-      // router.push("/(tabs)/profile");
+    onSuccess: async (data) => {
+      const token = data?.data?.token;
+      if (token) {
+        await saveToken(token);
+      }
+      router.push("/(tabs)/home");
     },
     onError: (err) => {
       console.log(err);
@@ -53,7 +56,10 @@ const OTPVerificationScreen = () => {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleVerify}>
-        <Text style={styles.buttonText}>Verify</Text>
+        <Text style={styles.buttonText}>
+          {" "}
+          {isPending ? "Processing" : "Verify"}
+        </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -90,7 +96,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#1e73be",
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",

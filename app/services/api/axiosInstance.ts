@@ -1,3 +1,4 @@
+import { getToken } from "@/utils/securestore";
 import axios from "axios";
 
 const axiosInstance = axios.create({
@@ -6,18 +7,11 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = "your-auth-token"; // Replace with actual logic from context or storage
-
-    // Only add token if required
-    if (
-      token &&
-      !config.url?.includes("/generateOTP") &&
-      !config.url?.includes("/validateOTP")
-    ) {
+  async (config) => {
+    const token = await getToken();
+    if (token) {
       config.headers.token = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)

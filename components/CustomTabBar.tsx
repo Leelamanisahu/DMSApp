@@ -31,7 +31,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({
 
   useEffect(() => {
     translateX.value = withSpring(state.index * TAB_WIDTH, {
-      damping: 13,
+      damping: 12,
       stiffness: 120,
     });
   }, [state.index]);
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     height: "100%",
     width: TAB_WIDTH,
-    backgroundColor: "#000",
+    backgroundColor: "#1e73be",
     borderRadius: 40,
   },
   tabButton: {
